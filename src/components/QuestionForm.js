@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 function QuestionForm(props) {
   const [formData, setFormData] = useState({
@@ -10,6 +10,15 @@ function QuestionForm(props) {
     correctIndex: 0,
   });
 
+    const isMounted = useRef(true);
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   function handleChange(event) {
     setFormData({
       ...formData,
@@ -19,7 +28,45 @@ function QuestionForm(props) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    console.log(formData);
+        const answers = [
+      formData.answer1,
+      formData.answer2,
+      formData.answer3,
+      formData.answer4,
+    ];
+
+    const correctIndex = parseInt(formData.correctIndex, 10);
+
+    fetch("http://localhost:4000/questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: formData.prompt,
+        answers: answers,
+        correctIndex: correctIndex,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (isMounted.current) {
+          setFormData({
+            prompt: "",
+            answer1: "",
+            answer2: "",
+            answer3: "",
+            answer4: "",
+            correctIndex: 0,
+          });
+          console.log("Response:", data);
+        }
+      })
+      .catch((error) => {
+        if (isMounted.current) {
+          console.error("Error:", error);
+        }
+      });
   }
 
   return (
